@@ -31,18 +31,26 @@ export default function ResultsPage({ initialService, initialCity, onBack, onSel
       query = query.ilike('city', `%${c}%`);
     }
 
-    const { data, error: err } = await query;
+    try {
+      const { data, error: err } = await query;
 
-    if (err) {
+      if (err) {
+        console.error('Loading search results failed:', err);
+        setError('ما قدرناش نجيبو النتائج. عاود حاول.');
+        setArtisans([]);
+      } else {
+        const sorted = [...(data ?? [])].sort(
+          (a, b) => Number(b.is_featured) - Number(a.is_featured)
+        );
+        setArtisans(sorted);
+      }
+    } catch (err) {
+      console.error('Search request threw:', err);
       setError('ما قدرناش نجيبو النتائج. عاود حاول.');
       setArtisans([]);
-    } else {
-      const sorted = [...(data ?? [])].sort(
-        (a, b) => Number(b.is_featured) - Number(a.is_featured)
-      );
-      setArtisans(sorted);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {

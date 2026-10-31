@@ -37,17 +37,27 @@ export default function AdminPage({ onBack, onLogout }: Props) {
 
   const fetchArtisans = async () => {
     setError(null);
-    const [artisansRes, leadsRes] = await Promise.all([
-      supabase.from('artisans').select('*').order('created_at', { ascending: false }),
-      supabase.rpc('count_service_leads'),
-    ]);
-    if (artisansRes.error) {
-      setError('ما قدرناش نجيبو الحرفيين.');
-    } else {
-      setArtisans(artisansRes.data ?? []);
+    try {
+      const [artisansRes, leadsRes] = await Promise.all([
+        supabase.from('artisans').select('*').order('created_at', { ascending: false }),
+        supabase.rpc('count_service_leads'),
+      ]);
+      if (artisansRes.error) {
+        console.error('Loading artisans failed:', artisansRes.error);
+        setError(`ما قدرناش نجيبو الحرفيين. (${artisansRes.error.message})`);
+      } else {
+        setArtisans(artisansRes.data ?? []);
+      }
+      if (leadsRes.error) {
+        console.error('Counting service leads failed:', leadsRes.error);
+      }
+      setQuoteRequests(leadsRes.error ? null : Number(leadsRes.data));
+    } catch (err) {
+      console.error('Artisans request threw:', err);
+      setError(`ما قدرناش نجيبو الحرفيين. (${err instanceof Error ? err.message : String(err)})`);
+    } finally {
+      setLoading(false);
     }
-    setQuoteRequests(leadsRes.error ? null : Number(leadsRes.data));
-    setLoading(false);
   };
 
   useEffect(() => {
